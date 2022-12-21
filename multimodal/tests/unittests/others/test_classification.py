@@ -16,6 +16,7 @@ def test_classification_str_list_input():
     )  # you can trust the default config, e.g., we use a `swin_base_patch4_window7_224` model
 
     image_path = test_data.iloc[0]["image"]
+    print(f"image_path: {image_path}")
 
     predictions_str = predictor.predict(image_path)
     predictions_list1 = predictor.predict([image_path])
