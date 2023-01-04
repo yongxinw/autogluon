@@ -2,11 +2,23 @@ import os
 import sys
 import pandas as pd
 import time
+import json
+
+from cl_benchmarks_fewshot import get_dataframe as get_dataframe_fewshot
 
 from autogluon.multimodal import MultiModalPredictor
 from sklearn.model_selection import StratifiedKFold
+
 import argparse
 
+import logging
+# logging.basicConfig(level=logging.NOTSET)
+logging.getLogger("pytorch_lighting").setLevel("WARNING")
+logging.disable(logging.INFO)
+logger = logging.getLogger("automm")
+# logger.propagate = False
+logger.setLevel("WARNING")
+logger.disabled = True
 
 def get_bayer():
     class_csv = "/home/ubuntu/data/cl_datasets/annotations/bayer_classes.csv"
@@ -279,7 +291,7 @@ def get_eflooddepth(fewshot: bool = False):
         train_csv = "/home/ubuntu/data/cl_datasets/annotations/europeanflooddepth_train_annotations.csv"
         test_csv = "/home/ubuntu/data/cl_datasets/annotations/europeanflooddepth_test_annotations.csv"
     else:
-        class_csv = "/home/ubuntu/data/cl_datasets/fewshot_annotations/class_map.csv"
+        class_csv = "/home/ubuntu/data/cl_datasets/fewshot_annotations/europeanflooddepth/class_map.csv"
         train_csv = "/home/ubuntu/data/cl_datasets/fewshot_annotations/europeanflooddepth/train.csv"
         test_csv = "/home/ubuntu/data/cl_datasets/fewshot_annotations/europeanflooddepth/test.csv"
 
@@ -335,7 +347,7 @@ def get_fgvc_aircrafts(fewshot: bool = False):
         test_csv = "/home/ubuntu/data/cl_datasets/annotations/fgvc_aircrafts_test_annotations.csv"
     else:
         class_csv = "/home/ubuntu/data/cl_datasets/fewshot_annotations/fgvc_aircrafts/class_map.csv"
-        train_csv = "/home/ubuntu/data/cl_datasets/fewshot_annotations/fgvc_aircrafts/train/csv"
+        train_csv = "/home/ubuntu/data/cl_datasets/fewshot_annotations/fgvc_aircrafts/train.csv"
         test_csv = "/home/ubuntu/data/cl_datasets/fewshot_annotations/fgvc_aircrafts/test.csv"
 
     classes_df_raw = pd.read_csv(class_csv, header=None, sep="\t")
@@ -823,7 +835,7 @@ def get_stanfordcars(fewshot: bool = False):
         train_csv = "/home/ubuntu/data/cl_datasets/annotations/stanfordcars_train_annotations.csv"
         test_csv = "/home/ubuntu/data/cl_datasets/annotations/stanfordcars_test_annotations.csv"
     else:
-        class_csv = "/home/ubuntu/data/cl_datasets/fewshot_annotations/stanfordcars/classes.csv"
+        class_csv = "/home/ubuntu/data/cl_datasets/fewshot_annotations/stanfordcars/class_map.csv"
         train_csv = "/home/ubuntu/data/cl_datasets/fewshot_annotations/stanfordcars/train.csv"
         test_csv = "/home/ubuntu/data/cl_datasets/fewshot_annotations/stanfordcars/test.csv"
 
@@ -878,7 +890,7 @@ def get_semartschool(fewshot: bool = False):
         train_csv = "/home/ubuntu/data/cl_datasets/annotations/semartschool_train_annotations.csv"
         test_csv = "/home/ubuntu/data/cl_datasets/annotations/semartschool_test_annotations.csv"
     else:
-        class_csv = "/home/ubuntu/data/cl_datasets/fewshot_annotations/semartschool/classes.csv"
+        class_csv = "/home/ubuntu/data/cl_datasets/fewshot_annotations/semartschool/class_map.csv"
         train_csv = "/home/ubuntu/data/cl_datasets/fewshot_annotations/semartschool/train.csv"
         test_csv = "/home/ubuntu/data/cl_datasets/fewshot_annotations/semartschool/test.csv"
 
@@ -933,7 +945,7 @@ def get_malariacellimages(fewshot: bool = False):
         train_csv = "/home/ubuntu/data/cl_datasets/annotations/malariacellimages_train_annotations.csv"
         test_csv = "/home/ubuntu/data/cl_datasets/annotations/malariacellimages_test_annotations.csv"
     else:
-        class_csv = "/home/ubuntu/data/cl_datasets/fewshot_annotations/malariacellimages/classes.csv"
+        class_csv = "/home/ubuntu/data/cl_datasets/fewshot_annotations/malariacellimages/class_map.csv"
         train_csv = "/home/ubuntu/data/cl_datasets/fewshot_annotations/malariacellimages/train.csv"
         test_csv = "/home/ubuntu/data/cl_datasets/fewshot_annotations/malariacellimages/test.csv"
 
@@ -988,7 +1000,7 @@ def get_mit67(fewshot: bool = False):
         train_csv = "/home/ubuntu/data/cl_datasets/annotations/mit67_train_annotations.csv"
         test_csv = "/home/ubuntu/data/cl_datasets/annotations/mit67_test_annotations.csv"
     else:
-        class_csv = "/home/ubuntu/data/cl_datasets/fewshot_annotations/mit67/classes.csv"
+        class_csv = "/home/ubuntu/data/cl_datasets/fewshot_annotations/mit67/class_map.csv"
         train_csv = "/home/ubuntu/data/cl_datasets/fewshot_annotations/mit67/train.csv"
         test_csv = "/home/ubuntu/data/cl_datasets/fewshot_annotations/mit67/test.csv"
 
@@ -1355,13 +1367,21 @@ def automm_cl(
     mode: str = "standard",
 ):
     dataset_name = dataset
-    train_df, test_df = get_dataframe(dataset_name, fewshot=fewshot)
-    print(train_df, test_df)
+    if fewshot:
+        train_df, test_df = get_dataframe_fewshot(dataset_name)
+    else:
+        train_df, test_df = get_dataframe(dataset_name, fewshot=False)
+    print(train_df)
+    print(train_df["ImageID"].iloc[0], f"exist: {os.path.exists(train_df['ImageID'].iloc[0])}")
+    print(test_df)
+    print(test_df["ImageID"].iloc[0], f"exist: {os.path.exists(test_df['ImageID'].iloc[0])}")
+    # print(test_df["ImageID"].iloc[0])
+    # exit()
 
     start_time = time.time()
     # Default AutoMM quick mode, mobilenetv3_large_100 model for 10 minutes
     if mode == "quick":
-        print(f"using quick mode")
+        print(f"using quick build")
         hyperparameters = {
             "env.per_gpu_batch_size": 32,
             "optimization.learning_rate": 1.0e-3,
@@ -1370,7 +1390,7 @@ def automm_cl(
             "model.timm_image.checkpoint_name": "mobilenetv3_large_100",
         }
     elif mode == "standard":
-        print(f"using standard mode")
+        print(f"using standard build")
         hyperparameters = {
             "env.per_gpu_batch_size": 32,
             "optimization.max_epochs": 10,
@@ -1428,21 +1448,24 @@ def automm_cl(
 
     else:
         predictor = MultiModalPredictor(label="LabelName", problem_type="classification", eval_metric="acc")
-
         predictor.fit(
             train_data=train_df,
-            #   tuning_data=train_df,  # hacky solution for fewshot datasets: bijou_dogs, redfin
+            # presets="clip_swin_large_fusion",
+            tuning_data=test_df,  # hacky solution for fewshot datasets: bijou_dogs, redfin
+            # config={
+            #     "model.names": [
+            #         "clip",
+            #         "timm_image",
+            #         "fusion_mlp"
+            #     ],
+            #     "model.clip.checkpoint_name": "openai/clip-vit-large-patch14-336",
+            #     "model.timm_image.checkpoint_name": "swin_large_patch4_window7_224",
+            #     "model.clip.max_text_len": 0,
+            #     "env.num_workers": 2,
+            # },
             hyperparameters=hyperparameters,
             time_limit=600 if mode == "quick" else None,
         )
-
-        if fewshot:
-            predictor.fit(
-                train_data=test_df,
-                #   tuning_data=train_df,  # hacky solution for fewshot datasets: bijou_dogs, redfin
-                hyperparameters=hyperparameters,
-                time_limit=600 if mode == "quick" else None,
-            )
 
         end_time = time.time()
         elapsed_time = end_time - start_time
@@ -1462,12 +1485,25 @@ if __name__ == "__main__":
     parser.add_argument("--cross-validate", action="store_true", default=False)
     parser.add_argument("--folds", type=int, default=5)
     parser.add_argument("--label-name", type=str, default="LabelName", help="The column name of predictive label.")
+    parser.add_argument("--logdir", type=str, help="Log dir")
     parser.add_argument("--fewshot", action="store_true", default=False)
 
+
     args = parser.parse_args()
+    print(args.__dict__)
+    args_save_path = os.path.join(args.logdir, f"{args.dataset}_config.json")
+    print(f"saving args to {args_save_path}")
+    json.dump(args.__dict__, open(args_save_path, "w"))
+
+    mode = "fewshot" if args.fewshot else "fullshot"
+    if args.cross_validate:
+        mode += f"{args.folds}+cross_validation"
+    else:
+        mode += "+standard"
+    print(f"Running benchmark {args.dataset} in {mode} mode")
+
     if args.cross_validate:
         skf = StratifiedKFold(n_splits=args.folds, shuffle=True)
         automm_cl(dataset=args.dataset, fewshot=args.fewshot, skf=skf, folds=args.folds)
-        pass
     else:
         automm_cl(dataset=args.dataset, fewshot=args.fewshot, skf=None, folds=None)

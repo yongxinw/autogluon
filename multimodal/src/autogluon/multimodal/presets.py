@@ -478,6 +478,24 @@ def high_quality_fast_inference_ner():
     }
 
 
+@automm_presets.register()
+def clip_swin_large_fusion():
+    return {
+        # "model.names": [
+        #     "clip",
+        #     # "timm_image",
+        #     "fusion_mlp"
+        # ],
+        # "model.clip.checkpoint_name": "openai/clip-vit-large-patch14-336",
+        # "model.timm_image.checkpoint_name": "swin_large_patch4_window7_224",
+        # "model.clip.max_text_len": 0,
+        "model.names": ["clip"],
+        "model.clip.checkpoint_name": "openai/clip-vit-large-patch14-336",
+        "model.clip.max_text_len": 0,
+        "env.num_workers": 2,
+    }
+
+
 def list_automm_presets(verbose: bool = False):
     """
     List all available presets.
