@@ -36,11 +36,30 @@ else
   exit
 fi
 
+# Model selection method
+if [ ! -z "${MODEL_SELECTION}" ]; then
+  if [ "${MODEL_SELECTION}" = "cross_validation" ]; then
+    model_selection=cross_validation
+
+    # Number of folds
+    if [ ! -z "${FOLDS}" ]; then
+      folds=${FOLDS}
+    else
+      folds=5
+    fi
+  else
+    echo MODEL_SELECTION "${MODEL_SELECTION}" not recognized
+    exit
+  fi
+else
+  model_selection=train_val
+fi
+
 if [ ! -z "${LOGDIR}" ]; then
   logDir=${LOGDIR}
   if [ ! -d ${logDir} ]; then
-    echo Directory doesn\'t exit: ${logDir}
-    exit
+    echo Creating logDir: ${logDir}
+    mkdir -p ${logDir}
   fi
   echo logDir: ${logDir}
 else
@@ -61,7 +80,11 @@ fi
 
 for f in ${datasets[@]}; do
   if [ "${mode}" = "fewshot" ]; then
-    python fsl_cl_benchmarks.py --dataset $f --fewshot --logdir ${logDir} 2>&1 | tee ${logDir}/$f.log
+    if [ "${model_selection}" = "cross_validation" ]; then
+      python fsl_cl_benchmarks.py --dataset $f --fewshot --cross-validate --folds ${folds} --logdir ${logDir} 2>&1 | tee ${logDir}/$f.log
+    else
+      python fsl_cl_benchmarks.py --dataset $f --fewshot --logdir ${logDir} 2>&1 | tee ${logDir}/$f.log
+    fi
   else
     python fsl_cl_benchmarks.py --dataset $f --logdir ${logDir} 2>&1 | tee ${logDir}/$f.log
   fi

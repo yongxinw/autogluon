@@ -8,6 +8,7 @@ from .constants import (
     CATEGORICAL,
     CLASSIFICATION,
     FEATURE_EXTRACTION,
+    FEW_SHOT_IMAGE_CLASSIFICATION,
     FEW_SHOT_TEXT_CLASSIFICATION,
     IMAGE,
     IMAGE_BYTEARRAY,
@@ -182,6 +183,18 @@ PROBLEM_TYPES_REG.register(
         supported_modality_type={IMAGE},
         force_exist_modality={IMAGE},
     ),
+)
+
+# Few-shot Image classification
+PROBLEM_TYPES_REG.register(
+    FEW_SHOT_IMAGE_CLASSIFICATION,
+    ProblemTypeProperty(
+        name=FEW_SHOT_IMAGE_CLASSIFICATION,
+        support_fit=True,
+        support_zero_shot=True,
+        supported_modality_type={IMAGE},
+        force_exist_modality={IMAGE}
+    )
 )
 
 # Few-shot Text classification. TODO: For few-shot problems, they may be revised to be presets

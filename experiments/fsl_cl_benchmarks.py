@@ -1392,9 +1392,9 @@ def automm_cl(
     elif mode == "standard":
         print(f"using standard build")
         hyperparameters = {
-            "env.per_gpu_batch_size": 32,
+            "env.per_gpu_batch_size": 8,
             "optimization.max_epochs": 10,
-            "optimization.learning_rate": 1.0e-4,
+            "optimization.learning_rate": 1.0e-3,
             "optimization.optim_type": "adamw",
             "optimization.weight_decay": 1.0e-3,
             "model.timm_image.checkpoint_name": "swin_base_patch4_window7_224",
@@ -1410,10 +1410,15 @@ def automm_cl(
         X_train = train_df.drop(args.label_name, axis=1)
         highest_score = 0
         best_predictor = None
+        scores = []
         for i, (train_idx, val_idx) in enumerate(skf.split(X_train, y_train)):
+            print("Running fold {}".format(i))
             X_t, X_v = X_train.iloc[train_idx], X_train.iloc[val_idx]
             y_t, y_v = y_train.iloc[train_idx], y_train.iloc[val_idx]
-
+            print("Fold {}: training data has {} samples".format(i, len(X_t)))
+            print("Fold {}: validation data has {} samples".format(i, len(X_v)))
+            print(X_t)
+            print(X_v)
             train_df = pd.concat([X_t, y_t], axis=1)
             val_df = pd.concat([X_v, y_v], axis=1)
 
@@ -1421,37 +1426,35 @@ def automm_cl(
 
             predictor.fit(
                 train_data=train_df,
-                #   tuning_data=train_df,  # hacky solution for fewshot datasets: bijou_dogs, redfin
+                tuning_data=val_df,  # hacky solution for fewshot datasets: bijou_dogs, redfin
                 hyperparameters=hyperparameters,
                 time_limit=600 if mode == "quick" else None,
+                # time_limit=30
             )
 
             end_time = time.time()
             elapsed_time = end_time - start_time
 
-            print(f"Elapsed time for fold {i} is {elapsed_time:d} seconds")
+            print(f"Elapsed time for fold {i} is {int(elapsed_time)} seconds")
 
-            scores = predictor.evaluate(val_df, metrics=["accuracy"])
+            scores_i = predictor.evaluate(test_df, metrics=["accuracy"])
             # print('Top-1 val acc: %.3f' % scores["accuracy"])
-            print(f"Top-1 val acc for fold {i}: {scores['accuracy']:.3f}")
+            print(f"Top-1 val acc for fold {i}: {scores_i['accuracy']:.3f}")
 
             start_time = time.time()
 
-            # get best predictor
-            if scores["accuracy"] > highest_score:
-                highest_score = scores["accuracy"]
-                best_predictor = predictor
-
-        assert best_predictor is not None, "Expected best_predictor to be not None!"
-        scores = best_predictor.evaluate(test_df, metrics=["accuracy"])
-        print("Top-1 test acc: %.3f" % scores["accuracy"])
+            scores.append(scores_i)
+        accuracies = list(map(lambda x: x["accuracy"], scores))
+        print("Test acc for each fold: {}".format(accuracies))
+        average_acc = sum(accuracies) / len(accuracies)
+        print("Top-1 average test acc: %.3f" % average_acc)
 
     else:
         predictor = MultiModalPredictor(label="LabelName", problem_type="classification", eval_metric="acc")
         predictor.fit(
             train_data=train_df,
-            # presets="clip_swin_large_fusion",
-            tuning_data=test_df,  # hacky solution for fewshot datasets: bijou_dogs, redfin
+            presets="clip_swin_base_fusion",
+            # tuning_data=test_df,  # hacky solution for fewshot datasets: bijou_dogs, redfin
             # config={
             #     "model.names": [
             #         "clip",
@@ -1465,6 +1468,7 @@ def automm_cl(
             # },
             hyperparameters=hyperparameters,
             time_limit=600 if mode == "quick" else None,
+            # time_limit=30
         )
 
         end_time = time.time()
@@ -1497,7 +1501,7 @@ if __name__ == "__main__":
 
     mode = "fewshot" if args.fewshot else "fullshot"
     if args.cross_validate:
-        mode += f"{args.folds}+cross_validation"
+        mode += f"+{args.folds}fold_cross_validation"
     else:
         mode += "+standard"
     print(f"Running benchmark {args.dataset} in {mode} mode")

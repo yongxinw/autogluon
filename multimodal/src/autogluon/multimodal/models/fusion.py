@@ -82,6 +82,10 @@ class MultimodalFusionMLP(nn.Module):
             assert loss_weight > 0
         self.loss_weight = loss_weight
         self.model = nn.ModuleList(models)
+
+        # TODO: Hacky feature for locking backbones
+        for param in self.model.parameters():
+            param.requires_grad = False
         self.num_classes = num_classes
 
         raw_in_features = [per_model.out_features for per_model in models]

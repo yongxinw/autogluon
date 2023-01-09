@@ -479,7 +479,7 @@ def high_quality_fast_inference_ner():
 
 
 @automm_presets.register()
-def clip_swin_large_fusion():
+def clip_swin_base_fusion():
     return {
         # "model.names": [
         #     "clip",
@@ -489,9 +489,11 @@ def clip_swin_large_fusion():
         # "model.clip.checkpoint_name": "openai/clip-vit-large-patch14-336",
         # "model.timm_image.checkpoint_name": "swin_large_patch4_window7_224",
         # "model.clip.max_text_len": 0,
-        "model.names": ["clip"],
+        "model.names": ["clip", "timm_image", "fusion_mlp"],
+        "model.timm_image.checkpoint_name": "swin_base_patch4_window7_224",
         "model.clip.checkpoint_name": "openai/clip-vit-large-patch14-336",
         "model.clip.max_text_len": 0,
+        "model.fusion_mlp.weight": None,
         "env.num_workers": 2,
     }
 

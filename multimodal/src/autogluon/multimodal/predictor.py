@@ -1142,7 +1142,17 @@ class MultiModalPredictor:
             num_numerical_columns=len(df_preprocessor.numerical_feature_names),
             num_categorical_columns=len(df_preprocessor.categorical_num_categories),
         )
-        config = select_model(config=config, df_preprocessor=df_preprocessor)
+
+        # TODO: Skip select_model for fusion_fewshot_image_classification
+        # Hacky solution for running benchmarks now
+        if presets == "clip_swin_base_fusion":
+            # if doing fewshot image classification with fusion model
+            # then do not do model selection
+            pass
+            # TODO: Hacky version to remove loss weight attribute
+            delattr(config.model.fusion_mlp, "weight")
+        else:
+            config = select_model(config=config, df_preprocessor=df_preprocessor)
 
         if self._model is None:
             model = create_fusion_model(
