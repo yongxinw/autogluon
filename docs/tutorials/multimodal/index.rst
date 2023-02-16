@@ -21,6 +21,7 @@ Here are some example use-cases of AutoMM:
 - Object detection. :doc:`[Tutorial] <object_detection/quick_start/quick_start_coco>` `[Example] <https://github.com/autogluon/autogluon/tree/master/examples/automm/object_detection>`_.
 - Extracting named entities. :doc:`[Tutorial] <text_prediction/ner>`.
 - Search for relevant text / image via text queries. :doc:`[Tutorial] <matching/index>`.
+- Document Classification (Experimental). :doc:`[Tutorial] <document/index>`.
 
 
 In the following, we decomposed the functionalities of AutoMM and prepared step-by-step guide for each functionality.
@@ -99,6 +100,12 @@ Image Data -- Object Detection
       :link: object_detection/data_preparation/voc_to_coco.html
 
       How to convert a dataset from VOC format to COCO format for object detection.
+
+   .. card::
+      :title: Object Detection with DataFrame
+      :link: object_detection/data_preparation/object_detection_with_dataframe.html
+
+      How to use pd.DataFrame format for object detection
 
    .. card::
       :title: Fast Finetune on COCO Format Dataset
@@ -223,6 +230,24 @@ Advanced Topics
       :link: advanced_topics/customization.html
 
       How to customize AutoMM configurations.
+
+   .. card::
+      :title: AutoMM Presets
+      :link: advanced_topics/presets.html
+
+      How to use AutoMM presets.
+
+   .. card::
+      :title: Few Shot Learning with FusionSVM
+      :link: advanced_topics/few_shot_learning.html
+
+      How to use SVM combined with feature extraction for few shot learning.
+
+   .. card::
+      :title: Focal Loss
+      :link: advanced_topics/focal_loss.html
+
+      How to use focal loss in AutoMM.
 
 FAQ
 ---

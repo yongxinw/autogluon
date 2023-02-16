@@ -1,7 +1,7 @@
 AutoGluon: AutoML for Text, Image, Time Series, and Tabular Data
 ================================================================
 
-.. |ReleaseVersion| image:: https://img.shields.io/badge/doc%20release-v0.6.2-blue
+.. |ReleaseVersion| image:: https://img.shields.io/badge/doc%20release-v0.7.0-blue
     :target: https://auto.gluon.ai/dev/versions.html
     :scale: 100%
 .. |StableVersion| image:: https://img.shields.io/github/v/release/autogluon/autogluon?color=blue&label=stable%20release&sort=semver
@@ -91,6 +91,12 @@ Tutorials
 
       How to train time series models for forecasting.
 
+   .. card::
+      :title: Exploratory Data Analysis
+      :link: tutorials/eda/index.html
+
+      Tools to explore and visualize data.
+
 
 Managed Solutions Featuring AutoGluon
 -------------------------------------
@@ -112,6 +118,7 @@ Launch Tutorial Notebooks
    tutorials/multimodal/index
    tutorials/timeseries/index
    tutorials/cloud_fit_deploy/index
+   tutorials/eda/index
    cheatsheet.rst
    api/autogluon.predictor
    api/autogluon.features

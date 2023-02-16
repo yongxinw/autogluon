@@ -345,7 +345,7 @@ predictor.fit(train_data, presets="medium_quality")
 Higher quality presets usually result in better forecasts but take longer to train.
 The following presets are available:
 
-- ``"fast_training"``: fit simple "local" statistical models (``ETS``, ``ARIMA``, ``Theta``, ``Naive``, ``SeasonalNaive``). These models are fast to train, but cannot capture more complex patters in the data.
+- ``"fast_training"``: fit simple "local" statistical models (``ETS``, ``ARIMA``, ``Theta``, ``Naive``, ``SeasonalNaive``). These models are fast to train, but cannot capture more complex patterns in the data.
 - ``"medium_quality"``: all models in ``"fast_training"`` in addition to the tree-based ``AutoGluonTabular`` and the ``DeepAR`` deep learning model. Default setting that produces good forecasts with reasonable training time.
 - ``"high_quality"``: all models in ``"medium_quality"`` in addition to two more deep learning models: ``TemporalFusionTransformerMXNet`` (if MXNet is available) and ``SimpleFeedForward``. Moreover, this preset will enable hyperparameter optimization for local statistical models. Usually more accurate than ``medium_quality``, but takes longer to train.
 - ``"best_quality"``: all models in ``"high_quality"`` in addition to the transformer-based ``TransformerMXNet`` model (if MXNet is available). This setting also enables hyperparameter optimization for deep learning models. Usually better than ``high_quality``, but takes much longer to train.
@@ -437,14 +437,54 @@ The `hyperparameter_tune_kwargs` dict must include the following keys:
 **Note:** HPO significantly increases the training time for most models, but often provides only modest performance gains.
 
 
-### Forecasting irregularly-sampled time series
+### Forecasting irregularly-sampled time series & handling missing data
 By default, `TimeSeriesPredictor` expects the time series data to be regularly sampled (e.g., measurements done every day).
 However, in some applications, like finance, data often comes with irregular measurements (e.g., no stock price is available for weekends or holidays).
+AutoGluon provides two options for working with such data.
 
-To train on such irregularly-sampled time series, we can set the `ignore_time_index` flag in the predictor.
+#### Option 1: Extend the index and fill missing values
+
+Here is an example of a dataset with an irregular time index:
+```{.python .input}
+df_irregular = TimeSeriesDataFrame(
+    pd.DataFrame(
+        {
+            "item_id": [0, 0, 0, 1, 1],
+            "timestamp": ["2022-01-01", "2022-01-02", "2022-01-04", "2022-01-01", "2022-01-04"],
+            "target": [1, 2, 3, 4, 5],
+        }
+    )
+)
+df_irregular
+```
+We can fill the gaps in the time index using the method :meth:`autogluon.timeseries.TimeSeriesDataFrame.to_regular_index`.
+Here we specify `freq="D"` to indicate that the filled index must have a daily frequency
+(see [other possible choices in pandas documentation](https://pandas.pydata.org/docs/user_guide/timeseries.html#timeseries-offset-aliases)).
+```{.python .input}
+df_regular = df_irregular.to_regular_index(freq="D")
+df_regular
+```
+We can verify that the index is now regular and has a daily frequency
+```{.python .input}
+print(f"Data has frequency '{df_regular.freq}'")
+```
+However, now the data contains missing values represented by `NaN`.
+To fill the NaNs, we use the method :meth:`autogluon.timeseries.TimeSeriesDataFrame.fill_missing_values` that implements various imputation strategies.
+```{.python .input}
+df_filled = df_regular.fill_missing_values()
+df_filled
+```
+Now the data has a regular index and contains no missing values, so it can be used to train a `TimeSeriesPredictor`.
+
+#### Option 2: Completely ignore the time index
+
+This can be done by setting the `ignore_time_index` flag in the predictor.
 ```python
 predictor = TimeSeriesPredictor(..., ignore_time_index=True)
 predictor.fit(train_data=train_data)
 ```
-In this case, the predictor will completely ignore the timestamps in `train_data`, and the predictions made by the model will have a dummy `timestamp` index with frequency equal to 1 second.
-Also, the seasonality will be disabled for models like as `ETS` and `ARIMA`.
+In this case, the following will happen
+
+- the predictor will completely ignore the timestamps in `train_data`;
+- predictions will have a dummy `timestamp` index with an arbitrary starting date and frequency equal to 1 second;
+- seasonality will be disabled for models like as `ETS` and `ARIMA`.
